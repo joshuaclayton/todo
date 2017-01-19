@@ -20,7 +20,8 @@ library
   build-depends:       base >= 4.7 && < 5
                      , text
                      , time
-                     , containers >= 0.5.9
+                     , containers >= 0.5.8
+                     , lens
 
   default-extensions:  OverloadedStrings
   default-language:    Haskell2010
