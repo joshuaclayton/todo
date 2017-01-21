@@ -6,6 +6,9 @@ module TodoList
 
     , createNewTodoList
     , update
+
+    , tlTitle
+    , todos
     ) where
 
 import           Control.Lens
@@ -37,11 +40,16 @@ update (UpdateTodo msg id') l =
         Nothing -> l
         Just t -> l & tlTodos %~ Map.adjust (const $ Todo.update msg t) id'
 update (CreateTodo title) l =
-    l & tlTodos %~ uncurry Map.insert (generateNewTodo l title)
+    l
+    & tlStartingTodoId %~ succ
+    & tlTodos %~ uncurry Map.insert (generateNewTodo l title)
 update (UpdateTitle t) l =
     l & tlTitle .~ t
 update (DeleteTodo id') l =
     l & tlTodos %~ Map.delete id'
+
+todos :: TodoList -> [Todo]
+todos = map snd . Map.toList . (^. tlTodos)
 
 findTodo :: TodoList -> TodoId -> Maybe Todo
 findTodo l id' = Map.lookup id' $ l ^. tlTodos

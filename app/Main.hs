@@ -1,4 +1,7 @@
 module Main where
 
+import Control.Monad (void)
+import TodoUi (runApp)
+
 main :: IO ()
-main = putStrLn "Hello world"
+main = void runApp
