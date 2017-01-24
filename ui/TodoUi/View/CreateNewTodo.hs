@@ -7,10 +7,9 @@ import qualified Brick.Types as T
 import           Brick.Widgets.Core ((<+>), txt)
 import qualified Brick.Widgets.Edit as E
 import           Control.Lens.Operators
-import           TodoUi.Model
 import           TodoUi.Types
 
-view :: Model -> [T.Widget CreateTodoFieldNames]
+view :: Model -> [T.Widget TodoEvent]
 view m = [ui]
   where
     ui = txt "Create a new todo: " <+> e1

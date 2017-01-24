@@ -41,9 +41,8 @@ executable todo-exe
   default-language:    Haskell2010
   other-modules:       TodoUi
                      , TodoUi.Util
-                     , TodoUi.Route
-                     , TodoUi.Model
                      , TodoUi.Types
+                     , TodoUi.Update
                      , TodoUi.View
                      , TodoUi.View.Homepage
                      , TodoUi.View.CreateNewTodo

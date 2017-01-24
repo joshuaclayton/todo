@@ -10,9 +10,9 @@ import           Control.Lens.Operators
 import           Data.Monoid ((<>))
 import           Todo
 import           TodoList
-import           TodoUi.Model
+import           TodoUi.Types (Model, TodoEvent, mTodoList)
 
-view :: Model -> [T.Widget a]
+view :: Model -> [T.Widget TodoEvent]
 view m = [ui]
   where
     items = todos $ m^.mTodoList
