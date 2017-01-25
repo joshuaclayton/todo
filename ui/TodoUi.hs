@@ -8,15 +8,24 @@ import           Brick.Main (halt, continue)
 import qualified Brick.Main as M
 import qualified Brick.Types as T
 import qualified Brick.Widgets.Edit as E
+import qualified Brick.Widgets.List as L
 import           Control.Lens hiding (Level)
 import qualified Graphics.Vty as V
 import           TodoList
 import           TodoUi.Types
 import           TodoUi.Update
+import           TodoUi.Util
 import           TodoUi.View
 
 runApp :: IO Model
-runApp = M.defaultMain theApp (Model Homepage demoList initialCreateTodoForm)
+runApp = M.defaultMain theApp initialModel
+  where
+    initialModel = Model
+        { _mRoute = Homepage
+        , _mTodoList = demoList
+        , _mCreateTodoForm = initialCreateTodoForm
+        , _mSelectedItem = Nothing
+        }
 
 demoList :: TodoList
 demoList =
@@ -30,7 +39,7 @@ theApp =
           , M.appChooseCursor = M.showFirstCursor
           , M.appHandleEvent = appEvent
           , M.appStartEvent = return
-          , M.appAttrMap = const $ A.attrMap V.defAttr [ ]
+          , M.appAttrMap = const $ A.attrMap V.defAttr TodoUi.View.styles
           }
 
 appEvent :: Model -> T.BrickEvent TodoEvent e -> T.EventM TodoEvent (T.Next Model)
@@ -40,7 +49,10 @@ appEvent model (T.VtyEvent e) =
             case e of
                 V.EvKey V.KEsc [] -> halt model
                 V.EvKey (V.KChar 'a') [] -> continue $ TodoUi.Update.update (NavigateTo CreateNewTodo) model
-                _ -> continue model
+                ev -> continue =<< do
+                    newList <- L.handleListEvent ev (modelToList model)
+                    return $ model & mSelectedItem .~ (newList ^. L.listSelectedL)
+
         CreateNewTodo ->
             case e of
                 V.EvKey V.KEsc [] -> continue $ TodoUi.Update.update (NavigateTo Homepage) model
@@ -48,4 +60,5 @@ appEvent model (T.VtyEvent e) =
                 _ -> continue =<< case F.focusGetCurrent (model^.mCreateTodoForm^.focusRing) of
                     Just EditTitle -> T.handleEventLensed model (mCreateTodoForm . editTitle) E.handleEditorEvent e
                     Nothing -> return model
+                    _ -> return model
 appEvent model _ = continue model

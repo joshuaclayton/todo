@@ -37,6 +37,7 @@ executable todo-exe
                      , lens
                      , vty
                      , text-zipper
+                     , vector
   default-extensions:  OverloadedStrings
   default-language:    Haskell2010
   other-modules:       TodoUi

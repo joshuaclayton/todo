@@ -15,6 +15,7 @@ data Route
 
 data TodoEvent
     = EditTitle
+    | RenderTodoList Text
     deriving (Eq, Ord, Show)
 
 data CreateTodoForm = CreateTodoForm
@@ -28,6 +29,7 @@ data Model = Model
     { _mRoute :: Route
     , _mTodoList :: TodoList
     , _mCreateTodoForm :: CreateTodoForm
+    , _mSelectedItem :: Maybe Int
     }
 
 makeLenses ''Model
