@@ -15,7 +15,7 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 
 data TodoStatus = Complete | Incomplete
-data TodoPriority = Low | Medium | High
+data TodoPriority = Low | Medium | High deriving Show
 newtype DueDate = DueDate UTCTime
 newtype TodoId = TodoId Integer deriving (Enum, Eq, Ord)
 

@@ -38,4 +38,4 @@ initialCreateTodoForm :: CreateTodoForm
 initialCreateTodoForm =
     CreateTodoForm
         (F.focusRing [EditTitle])
-        (E.editor EditTitle (txt . Data.Text.unlines) Nothing "")
+        (E.editor EditTitle (txt . Data.Text.unlines) (Just 1) "")
