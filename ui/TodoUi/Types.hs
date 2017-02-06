@@ -7,6 +7,7 @@ import           Brick.Widgets.Core (txt)
 import qualified Brick.Widgets.Edit as E
 import           Control.Lens (makeLenses)
 import           Data.Text (Text, unlines)
+import qualified Data.Time as T
 import           TodoList (TodoList)
 
 data Route
@@ -17,6 +18,8 @@ data TodoEvent
     = EditTitle
     | RenderTodoList Text
     deriving (Eq, Ord, Show)
+
+data Effect = UpdateCurrentTime T.UTCTime
 
 data CreateTodoForm = CreateTodoForm
     { _focusRing :: F.FocusRing TodoEvent
@@ -30,6 +33,7 @@ data Model = Model
     , _mTodoList :: TodoList
     , _mCreateTodoForm :: CreateTodoForm
     , _mSelectedItem :: Maybe Int
+    , _mNow :: T.UTCTime
     }
 
 makeLenses ''Model

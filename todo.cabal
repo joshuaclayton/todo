@@ -22,6 +22,8 @@ library
                      , time
                      , containers >= 0.5.8
                      , lens
+                     , time
+                     , mono-traversable
   default-extensions:  OverloadedStrings
   default-language:    Haskell2010
 
@@ -38,6 +40,9 @@ executable todo-exe
                      , vty
                      , text-zipper
                      , vector
+                     , distance-of-time
+                     , time
+                     , mono-traversable
   default-extensions:  OverloadedStrings
   default-language:    Haskell2010
   other-modules:       TodoUi

@@ -3,13 +3,19 @@ module TodoUi
     ) where
 
 import qualified Brick.AttrMap as A
+import           Brick.BChan
 import qualified Brick.Focus as F
 import           Brick.Main (halt, continue)
 import qualified Brick.Main as M
 import qualified Brick.Types as T
 import qualified Brick.Widgets.Edit as E
 import qualified Brick.Widgets.List as L
+import           Control.Concurrent (threadDelay, forkIO)
 import           Control.Lens hiding (Level)
+import           Control.Monad (forever)
+import           Data.MonoTraversable (omap)
+import           Data.Time (getCurrentTime, addUTCTime)
+import qualified Data.Time.Distance as D
 import qualified Graphics.Vty as V
 import           Todo
 import           TodoList
@@ -19,13 +25,24 @@ import           TodoUi.Util
 import           TodoUi.View
 
 runApp :: IO Model
-runApp = M.defaultMain theApp initialModel
+runApp = do
+    now <- getCurrentTime
+
+    chan <- newBChan 10
+
+    _ <- forkIO $ forever $ do
+        now' <- getCurrentTime
+        writeBChan chan $ UpdateCurrentTime now'
+        threadDelay 10000
+
+    M.customMain (V.mkVty V.defaultConfig) (Just chan) theApp (initialModel now)
   where
-    initialModel = Model
+    initialModel t = Model
         { _mRoute = Homepage
         , _mTodoList = demoList
         , _mCreateTodoForm = initialCreateTodoForm
         , _mSelectedItem = Nothing
+        , _mNow = t
         }
 
 demoList :: TodoList
@@ -34,7 +51,7 @@ demoList =
     & TodoList.update (CreateTodo "Buy milk")
     & TodoList.update (CreateTodo "Buy eggs")
 
-theApp :: M.App Model a TodoEvent
+theApp :: M.App Model Effect TodoEvent
 theApp =
     M.App { M.appDraw = TodoUi.View.view
           , M.appChooseCursor = M.showFirstCursor
@@ -43,7 +60,19 @@ theApp =
           , M.appAttrMap = const $ A.attrMap V.defAttr TodoUi.View.styles
           }
 
-appEvent :: Model -> T.BrickEvent TodoEvent e -> T.EventM TodoEvent (T.Next Model)
+addTimeToDueDate :: Model -> Integer -> D.TimeUnit -> Todo -> Todo.Msg
+addTimeToDueDate m i u t =
+    case tDueDate t of
+        Nothing -> UpdateDueDate $ DueDate $ addTime u (m^.mNow)
+        Just d -> UpdateDueDate $ omap (addTime u) d
+  where
+    addTime D.Minute = addUTCTime (fromInteger $ 60*i)
+    addTime D.Hour = addUTCTime (fromInteger $ 60*60*i)
+    addTime D.Day = addUTCTime (fromInteger $ 60*60*24*i)
+    addTime _ = addUTCTime 0
+
+appEvent :: Model -> T.BrickEvent TodoEvent Effect -> T.EventM TodoEvent (T.Next Model)
+appEvent model (T.AppEvent (UpdateCurrentTime t)) = continue $ model & mNow .~ t
 appEvent model (T.VtyEvent e) =
     case model^.mRoute of
         Homepage ->
@@ -57,6 +86,12 @@ appEvent model (T.VtyEvent e) =
                 V.EvKey (V.KChar '1') [] -> continue $ withSelectedTodo model $ SetPriority Low
                 V.EvKey (V.KChar '2') [] -> continue $ withSelectedTodo model $ SetPriority Medium
                 V.EvKey (V.KChar '3') [] -> continue $ withSelectedTodo model $ SetPriority High
+                V.EvKey (V.KChar 'm') [] -> continue $ withSelectedTodo' model (addTimeToDueDate model 1 D.Minute)
+                V.EvKey (V.KChar 'h') [] -> continue $ withSelectedTodo' model (addTimeToDueDate model 1 D.Hour)
+                V.EvKey (V.KChar 'd') [] -> continue $ withSelectedTodo' model (addTimeToDueDate model 1 D.Day)
+                V.EvKey (V.KChar 'M') [] -> continue $ withSelectedTodo' model (addTimeToDueDate model (-1) D.Minute)
+                V.EvKey (V.KChar 'H') [] -> continue $ withSelectedTodo' model (addTimeToDueDate model (-1) D.Hour)
+                V.EvKey (V.KChar 'D') [] -> continue $ withSelectedTodo' model (addTimeToDueDate model (-1) D.Day)
                 ev -> continue =<< do
                     newList <- L.handleListEvent ev (modelToList model)
                     return $ model & mSelectedItem .~ (newList ^. L.listSelectedL)
@@ -71,8 +106,11 @@ appEvent model (T.VtyEvent e) =
 appEvent model _ = continue model
 
 withSelectedTodo :: Model -> Todo.Msg -> Model
-withSelectedTodo model msg = maybe model updateTodo mselected
+withSelectedTodo model msg = withSelectedTodo' model (const msg)
+
+withSelectedTodo' :: Model -> (Todo -> Todo.Msg) -> Model
+withSelectedTodo' model msg = maybe model updateTodo mselected
   where
     mselected = snd <$> L.listSelectedElement (modelToList model)
     updateTodo = flip TodoUi.Update.update model . updateMsg
-    updateMsg = UpdateTodoList . UpdateTodo msg . tId
+    updateMsg t = UpdateTodoList $ UpdateTodo (msg t) $ tId t

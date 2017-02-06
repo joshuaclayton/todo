@@ -11,10 +11,11 @@ import           Brick.Widgets.Core
 import qualified Brick.Widgets.List as L
 import           Control.Lens.Operators
 import           Data.Monoid ((<>))
+import           Data.Time.Distance
 import qualified Graphics.Vty as V
 import           Todo
 import           TodoList
-import           TodoUi.Types (Model, TodoEvent, mTodoList)
+import           TodoUi.Types (Model, TodoEvent, mTodoList, mNow)
 import           TodoUi.Util
 
 data Selector
@@ -27,14 +28,18 @@ view m = [ui]
             [ vLimit 1 $ C.center $ str "Todos"
             , B.hBorder
             , txt $ m^.mTodoList^.tlTitle
-            , L.renderList listDrawElement True $ modelToList m
+            , L.renderList (listDrawElement m) True $ modelToList m
             ]
 
 
-listDrawElement :: Bool -> Todo -> T.Widget a
-listDrawElement _ todo =
+listDrawElement :: Model -> Bool -> Todo -> T.Widget a
+listDrawElement m _ todo =
     withStyle (StylePriority $ tPriority todo) (txt "+ ") <+>
-    txt (tTitle todo)
+    txt (tTitle todo) <+>
+    rightAlign (str dueDate)
+  where
+    rightAlign = padLeft T.Max
+    dueDate = maybe " " (\(DueDate t) -> distanceOfTimeInWords t (m^.mNow)) (tDueDate todo)
 
 styles :: Styles
 styles =

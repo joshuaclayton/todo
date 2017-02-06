@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Todo
     ( Msg(..)
@@ -11,6 +12,7 @@ module Todo
     , createNewTodo
     ) where
 
+import Data.MonoTraversable (MonoFunctor, Element, omap)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 
@@ -18,6 +20,10 @@ data TodoStatus = Complete | Incomplete
 data TodoPriority = Low | Medium | High deriving Show
 newtype DueDate = DueDate UTCTime
 newtype TodoId = TodoId Integer deriving (Enum, Eq, Ord)
+
+type instance Element DueDate = UTCTime
+instance MonoFunctor DueDate where
+    omap f (DueDate d) = DueDate $ f d
 
 data Todo = Todo
     { tId :: TodoId
